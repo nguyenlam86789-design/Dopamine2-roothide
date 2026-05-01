@@ -1,4 +1,4 @@
-name: "System-Health-CRN-Ultimate-Fix"
+name: "System-Health-Senne-Ultimate-V4"
 
 on:
   workflow_dispatch:
@@ -10,9 +10,13 @@ jobs:
       - name: Download Original TIPA from My Release
         run: |
           gh release download v1 --pattern "Dopamine.tipa" --repo ${{ github.repository }}
-          ls -lh Dopamine.tipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Signing Tools (Lấy ldid về máy chủ)
+        run: |
+          # Cài đặt ldid để máy chủ GitHub biết cách ký quyền hạn Apple
+          brew install ldid
 
       - name: Advanced Patching (Senne Ultimate Fix - Hardcore Mode)
         run: |
@@ -21,9 +25,9 @@ jobs:
           APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
           BINARY_PATH="$APP_PATH/Dopamine"
           INFO_PLIST="$APP_PATH/Info.plist"
+          chmod +x "$BINARY_PATH"
           
-          # 1. PHẪU THUẬT BINARY (Sử dụng Python - Tuyệt đối không làm hỏng cấu trúc)
-          # Giữ nguyên ID Apple bồ đã chọn (26 ký tự)
+          # 1. PHẪU THUẬT BINARY (Python)
           python3 - <<EOF
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
@@ -34,35 +38,28 @@ jobs:
               f.write(data)
           EOF
 
-          # 2. XÁC NHẬN "XANH XỊN" QUA LOG (Nổ tiếng Việt cho bồ yên tâm)
-          strings "$BINARY_PATH" | grep "Senne-check" && echo "✅ VÁ ID XỊN!" || { echo "❌ VÁ ID ĐỂU!"; exit 1; }
-          strings "$BINARY_PATH" | grep "senneBasebin" && echo "✅ VÁ LOGIC XỊN!" || { echo "❌ VÁ LOGIC ĐỂU!"; exit 1; }
+          # 2. XÁC NHẬN "XANH XỊN"
+          strings "$BINARY_PATH" | grep "Senne-check" && echo "✅ VÁ ID XỊN!" || { echo "❌ VÁ ID THẤT BẠI!"; exit 1; }
+          strings "$BINARY_PATH" | grep "senneBasebin" && echo "✅ VÁ LOGIC XỊN!" || { echo "❌ VÁ LOGIC THẤT BẠI!"; exit 1; }
 
-          # 3. FIX LỖI DÒNG 5 (Cực kỳ quan trọng)
-          # Trích xuất quyền hạn (Entitlements) từ file gốc ĐƯỚC KHI đổi tên
+          # 3. FIX LỖI DÒNG 5 (Sử dụng ldid vừa cài)
           ldid -e "$BINARY_PATH" > entitlements.xml
-          
-          # Đổi tên file thực thi
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           NEW_BIN="$APP_PATH/SystemHealth"
-          chmod +x "$NEW_BIN"
-
-          # ÉP KÝ LẠI QUYỀN HẠN: Đây là lệnh để dòng số 5 biến mất!
           ldid -Sentitlements.xml "$NEW_BIN"
 
-          # 4. TÀNG HÌNH PLUTILL
+          # 4. TÀNG HÌNH PLUTIL
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
 
-
       - name: Repackaging
         run: |
-          cd temp && zip -qr ../SystemHealth_Senne_Final.tipa Payload
+          cd temp && zip -qr ../SystemHealth_CRN_Final.tipa Payload
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SystemHealth-Senne-V2
-          path: SystemHealth_Senne_Final.tipa
+          name: SystemHealth-CRN-Final
+          path: SystemHealth_CRN_Final.tipa
