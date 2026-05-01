@@ -1,87 +1,75 @@
-name: "*** build tipa file ***"
+name: "System-Health-CRN-Ultimate-Fix"
 
 on:
-  # schedule:
-  #   - cron: '0 */2 * * *' # every 2 hours
   workflow_dispatch:
-  pull_request:
-  push:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
-  build:
+  patch:
     runs-on: macos-14
     steps:
-      - name: Checkout
+      - name: Download Original TIPA from My Release
+        run: |
+          gh release download v1 --pattern "Dopamine.tipa" --repo ${{ github.repository }}
+          ls -lh Dopamine.tipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Advanced Patching (Senne Ultimate Exception)
         run: |
           set -x
-          git clone --recursive https://github.com/roothide/Dopamine2-roothide ${{ github.workspace }}
+          unzip -q Dopamine.tipa -d temp
+          APP_PATH=$(find temp/Payload -name "*.app" -type d | head -n 1)
+          BINARY_PATH="$APP_PATH/Dopamine"
+          INFO_PLIST="$APP_PATH/Info.plist"
+          chmod +x "$BINARY_PATH"
+
+          # Dùng Python phẫu thuật tầng sâu - Báo lỗi tiếng Việt nếu vá đểu
+          python3 - <<EOF
+          import sys
+          import os
+
+          with open("$BINARY_PATH", "rb") as f:
+              data = f.read()
           
-      - name: Install Procursus
-        uses: dhinakg/procursus-action@main
-        with:
-          packages: ldid findutils sed coreutils make
+          targets = {
+              b"com.opa334.Dopamine-roothide": b"com.apple.kernel.Senne-hide",
+              b"patchBasebin": b"senneBasebin",
+              b"TweakInject": b"SenneInject"
+          }
+          
+          error = False
+          for target, replacement in targets.items():
+              if target in data:
+                  data = data.replace(target, replacement)
+                  print(f"✅ VÁ XỊN: Đã thay thành công chuỗi '{target.decode()}'")
+              else:
+                  print(f"❌ VÁ ĐỂU: KHÔNG tìm thấy chuỗi '{target.decode()}' trong file gốc!")
+                  error = True
+          
+          if error:
+              print("\n‼️ KẾT QUẢ: File gốc của bồ không khớp từ khóa. Bồ xem lại bản Dopamine nhé!")
+              sys.exit(1) # Ép GitHub hiện ĐỎ lòm
+          
+          with open("$BINARY_PATH", "wb") as f:
+              f.write(data)
+          print("\n🎉 CHÚC MỪNG: Đã lột xác thành công bản Senne Vô Đối!")
+          EOF
 
-      - name: Install THEOS
+          # Các bước tàng hình giữ nguyên
+          mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
+          plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
+          plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
+          plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
+          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
+          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
+          cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
+
+      - name: Repackaging
         run: |
-          set -x
-          export BASEDIR="$(pwd)"
-          export THEOS="${BASEDIR}/theos"
-          mkdir -p $THEOS
-          curl -fsSL https://raw.githubusercontent.com/roothide/theos/master/bin/install-theos >> install-theos.sh
-          gsed -E "/^\s*get_theos\s*$/,+1 s/^(\s*)(get_sdks)\s*$/\1mkdir -p \${THEOS}\/sdks\n\1touch \${THEOS}\/sdks\/sdk\n\1\2/g" -i install-theos.sh
-          bash install-theos.sh
-          curl -L https://github.com/theos/sdks/releases/latest/download/iPhoneOS16.5.sdk.tar.xz --output $THEOS/sdks/iPhoneOS16.5.sdk.tar.xz
-          gunzip $THEOS/sdks/iPhoneOS16.5.sdk.tar.xz
-          tar -xf $THEOS/sdks/iPhoneOS16.5.sdk.tar -C $THEOS/sdks
-          rm $THEOS/sdks/iPhoneOS16.5.sdk.tar
-          cd $BASEDIR
-
-      - name: Build and Install trustcache
-        run: |
-          set -x
-          git clone https://github.com/CRKatri/trustcache
-          cd trustcache
-          export CFLAGS="$CFLAGS -I$(brew --prefix openssl)/include -arch arm64"
-          export LDFLAGS="$LDFLAGS -L$(brew --prefix openssl)/lib -arch arm64"
-          gmake -j$(sysctl -n hw.physicalcpu) OPENSSL=1
-          sudo cp trustcache /opt/procursus/bin/
-
-      - name: Set Environment Variables
-        run: |
-          set -x
-          T2=$(TZ=UTC-2 date +'%Y%m%d_%H%M%S')
-          TS=$(date -j -f "%Y%m%d_%H%M%S" "${T2}" +%s)
-          SHASH=$(git rev-parse --short HEAD)
-          echo "ctime=${T2}" >> $GITHUB_ENV
-          echo "ctimestamp=${TS}" >> $GITHUB_ENV
-          echo "shorthash=${SHASH}" >> $GITHUB_ENV
-
-      - name: Install libarchive
-        run: |
-          brew install libarchive
-
-      - name: Build
-        run: |
-          set -x
-          export BASEDIR="$(pwd)"
-          export THEOS="${BASEDIR}/theos"
-          typeset itemcount=$(plutil -extract items raw -expect array ./Application/Dopamine/UI/Settings/Credits.plist)
-          for ((i=0; i<$itemcount; i++)); do if [ "$(plutil -extract items.$i.headerCellClass raw ./Application/Dopamine/UI/Settings/Credits.plist)" = "DOCreditsCell" ]; then DOCreditsCellIndex=$i; break; fi; done;
-          plutil -insert items.$DOCreditsCellIndex.names -xml "<dict><key>name</key><string>${{ github.actor }}</string><key>link</key><string>https://github.com/${{ github.repository }}</string></dict>" -append ./Application/Dopamine/UI/Settings/Credits.plist
-          rm -rf $(xcrun --sdk iphoneos --show-sdk-path)/usr/include/xpc $(xcrun --sdk iphoneos --show-sdk-path)/usr/include/xpc.modulemap
-          gmake -j$(sysctl -n hw.physicalcpu)
-          VERSION=$(cat ./BaseBin/_external/basebin/.version)-$(git rev-parse --short HEAD)
-          mv ./Application/Dopamine.tipa  "./Application/roothide-Dopamine-${VERSION}.tipa"
-          echo "version=${VERSION}" >> $GITHUB_ENV
-
+          cd temp && zip -qr ../SystemHealth_Senne_Final.tipa Payload
+          
       - name: Upload Artifact
-        id: dopamine-latest-upload
         uses: actions/upload-artifact@v4
         with:
-          name: roothide-Dopamine-${{ env.version }}.tipa
-          path: |
-            ${{ github.workspace }}/Application/roothide-Dopamine-${{ env.version }}.tipa
+          name: SystemHealth-Senne-V2
+          path: SystemHealth_Senne_Final.tipa
