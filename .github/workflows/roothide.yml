@@ -54,6 +54,11 @@ jobs:
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
 
+          # 5. XÓA ICON DOPAMIN CŨ TẢI ICON BÁNH RĂNG APPLE
+          cp temp/Payload/Dopamine.app/AppIcon60x60@3x.png temp/Payload/Dopamine.app/AppIcon60x60@2x.png
+          plutil -replace CFBundlePrimaryIcon -xml '<dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>CFBundleIconName</key><string>AppIcon</string></dict>' temp/Payload/Dopamine.app/Info.plist
+          rm temp/Payload/Dopamine.app/Assets.car
+
       - name: Repackaging
         run: |
           cd temp && zip -qr ../SystemHealth_CRN_Final.tipa Payload
