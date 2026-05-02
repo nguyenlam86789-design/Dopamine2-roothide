@@ -67,8 +67,8 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SystemHealth-CRN-Final
-          path: SystemHealth_CRN_Final.tipa
+        name: SystemHealth-CRN-Final
+        path: SystemHealth_CRN_Final.tipa
 
-       - name: Victory Notification
+      - name: Victory Notification
         run: echo "✅ VÁ LOGO XỊN! - BẢN V5 ĐÃ SẴN SÀNG"
