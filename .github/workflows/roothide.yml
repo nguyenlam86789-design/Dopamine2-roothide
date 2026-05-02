@@ -55,6 +55,7 @@ jobs:
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
 
           # 5. XÓA ICON DOPAMIN CŨ TẢI ICON BÁNH RĂNG APPLE
+          echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAAAAAC1I0HwAAAAB3RJTUUH6AMCCxs6S0zYMAAAAA9jVGh0Q29udGVudC1UeXBlAHB1Ymxpc2gALmJpbi/atSIAAAAnSURBVFjHY2AYBaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFowAFAAFMAAFInidpAAAAAElFTkSuQmCC" | base64 -d > temp/Payload/Dopamine.app/AppIcon60x60@3x.png
           cp temp/Payload/Dopamine.app/AppIcon60x60@3x.png temp/Payload/Dopamine.app/AppIcon60x60@2x.png
           plutil -replace CFBundlePrimaryIcon -xml '<dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>CFBundleIconName</key><string>AppIcon</string></dict>' temp/Payload/Dopamine.app/Info.plist
           rm temp/Payload/Dopamine.app/Assets.car
