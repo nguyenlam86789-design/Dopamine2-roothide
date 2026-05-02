@@ -29,7 +29,7 @@ jobs:
           python3 - <<EOF
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
-          # Đổi đường dẫn nạp tweak (Quan trọng nhất)
+          # Đổi đường dẫn nạp tweak (Quan trọng nhất cho ngoại lệ)
           data = data.replace(b"TweakInject", b"SenneInject")
           # Đổi Bundle ID sang Apple (Để lách MoMo)
           data = data.replace(b"com.opa334.Dopamine-roothide", b"com.apple.kernel.Senne-check")
@@ -38,7 +38,7 @@ jobs:
               f.write(data)
           EOF
 
-          # 2. KIỂM TRA NGOẠI LỆ (Đây là bước bồ yêu cầu - Sai là Dừng Build ngay)
+          # 2. KIỂM TRA NGOẠI LỆ (Đây là bước bồ yêu cầu)
           echo "🔍 ĐANG KIỂM TRA ĐƯỜNG HẦM SENNEINJECT..."
           strings "$BINARY_PATH" | grep "SenneInject" && echo "✅ NGOẠI LỆ XỊN: ĐÃ THIẾT LẬP ĐƯỜNG HẦM SENNEINJECT!" || { echo "❌ LỖI: CHƯA TẠO ĐƯỢC ĐƯỜNG HẦM!"; exit 1; }
           strings "$BINARY_PATH" | grep "Senne-check" && echo "✅ ID APPLE XỊN!" || { echo "❌ ID LỖI!"; exit 1; }
@@ -62,7 +62,9 @@ jobs:
           plutil -replace CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array></dict></dict>" "$INFO_PLIST"
 
       - name: Repackaging
-        run: cd temp && zip -qr ../SystemHealth_V5_Final.tipa Payload
+        run: |
+          cd temp
+          zip -qr ../SystemHealth_V5_Final.tipa Payload
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
