@@ -69,4 +69,6 @@ jobs:
         with:
           name: SystemHealth-CRN-Final
           path: SystemHealth_CRN_Final.tipa
-            echo "✅ VÁ LOGO XỊN!"
+
+      - name: Victory Notification
+        run: echo "✅ VÁ LOGO XỊN! - BẢN V5 ĐÃ SẴN SÀNG"
