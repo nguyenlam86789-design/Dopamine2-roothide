@@ -1,4 +1,4 @@
-name: "System-Health-Senne-Ultimate-V5"
+name: "System-Health-Senne-Ultimate-V5-Final"
 
 on:
   workflow_dispatch:
@@ -7,17 +7,16 @@ jobs:
   patch:
     runs-on: macos-14
     steps:
-      - name: Download Original TIPA from My Release
+      - name: Download Original TIPA
         run: |
           gh release download v1 --pattern "Dopamine.tipa" --repo ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Signing Tools (Lấy ldid về máy chủ)
-        run: |
-          brew install ldid
+      - name: Install Signing Tools
+        run: brew install ldid
 
-      - name: Advanced Patching (Senne Ultimate Fix - Hardcore Mode)
+      - name: Advanced Patching (Mục tiêu: Đổi đường hầm SenneInject)
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
@@ -26,38 +25,41 @@ jobs:
           INFO_PLIST="$APP_PATH/Info.plist"
           chmod +x "$BINARY_PATH"
           
-          # 1. PHẪU THUẬT BINARY (Python)
+          # 1. PHẪU THUẬT BINARY - ĐỔI ĐƯỜNG HẦM TWEAKINJECT -> SENNEINJECT
           python3 - <<EOF
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
+          # Đổi đường dẫn nạp tweak (Quan trọng nhất)
+          data = data.replace(b"TweakInject", b"SenneInject")
+          # Đổi Bundle ID sang Apple (Để lách MoMo)
           data = data.replace(b"com.opa334.Dopamine-roothide", b"com.apple.kernel.Senne-check")
           data = data.replace(b"patchBasebin", b"senneBasebin")
-          data = data.replace(b"TweakInject", b"SenneInject")
           with open("$BINARY_PATH", "wb") as f:
               f.write(data)
           EOF
 
-          # 2. XÁC NHẬN "XANH XỊN"
-          strings "$BINARY_PATH" | grep "Senne-check" && echo "✅ VÁ ID XỊN!" || { echo "❌ VÁ ID THẤT BẠI!"; exit 1; }
-          strings "$BINARY_PATH" | grep "senneBasebin" && echo "✅ VÁ LOGIC XỊN!" || { echo "❌ VÁ LOGIC THẤT BẠI!"; exit 1; }
+          # 2. KIỂM TRA NGOẠI LỆ (Đây là bước bồ yêu cầu - Sai là Dừng Build ngay)
+          echo "🔍 ĐANG KIỂM TRA ĐƯỜNG HẦM SENNEINJECT..."
+          strings "$BINARY_PATH" | grep "SenneInject" && echo "✅ NGOẠI LỆ XỊN: ĐÃ THIẾT LẬP ĐƯỜNG HẦM SENNEINJECT!" || { echo "❌ LỖI: CHƯA TẠO ĐƯỢC ĐƯỜNG HẦM!"; exit 1; }
+          strings "$BINARY_PATH" | grep "Senne-check" && echo "✅ ID APPLE XỊN!" || { echo "❌ ID LỖI!"; exit 1; }
 
-          # 3. FIX LỖI DÒNG 5
+          # 3. ĐỔI TÊN BINARY & FIX DÒNG 5
           ldid -e "$BINARY_PATH" > entitlements.xml
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           NEW_BIN="$APP_PATH/SystemHealth"
           ldid -Sentitlements.xml "$NEW_BIN"
 
-          # 4. TÀNG HÌNH PLUTIL
+          # 4. TÀNG HÌNH PLUTIL & CHỐNG VĂNG
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
-          plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
+          rm -rf "$APP_PATH/embedded.mobileprovision"
 
-          # 5. PHẪU THUẬT THẨM MỸ ICON
+          # 5. ĐỘ ICON BÁNH RĂNG (Sạch rác Assets.car)
+          rm -f "$APP_PATH/Assets.car"
           echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAAAAAC1I0HwAAAAB3RJTUUH6AMCCxs6S0zYMAAAAA9jVGh0Q29udGVudC1UeXBlAHB1Ymxpc2gALmJpbi/atSIAAAAnSURBVFjHY2AYBaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFowAFAAFMAAFInidpAAAAAElFTkSuQmCC" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
-          plutil -replace CFBundlePrimaryIcon -xml "<dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array><key>CFBundleIconName</key><string>AppIcon</string></dict>" "$INFO_PLIST"
-          rm -f "$APP_PATH/Assets.car"
+          plutil -replace CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array></dict></dict>" "$INFO_PLIST"
 
       - name: Repackaging
         run: cd temp && zip -qr ../SystemHealth_V5_Final.tipa Payload
@@ -67,6 +69,3 @@ jobs:
         with:
           name: SystemHealth-V5-Final
           path: SystemHealth_V5_Final.tipa
-
-      - name: Victory Notification
-        run: echo "✅ VÁ LOGO XỊN! - BẢN V5 ĐÃ SẴN SÀNG ĐỂ PHÁ ĐẢO MOMO"
