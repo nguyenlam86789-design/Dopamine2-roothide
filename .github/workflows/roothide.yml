@@ -71,3 +71,10 @@ jobs:
         with:
           name: SystemHealth-V5-Final
           path: SystemHealth_V5_Final.tipa
+
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SystemHealth-V5-Final
+          path: SystemHealth_V5_Final.tipa
