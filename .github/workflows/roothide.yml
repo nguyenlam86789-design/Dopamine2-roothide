@@ -14,7 +14,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Signing Tools
-        run: brew install ldid 
+        run: brew install ldid
+
       - name: Advanced Patching (Mục tiêu: Đổi đường hầm SenneInject)
         run: |
           set -x
@@ -28,7 +29,7 @@ jobs:
           python3 - <<EOF
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
-          # Đổi đường dẫn nạp tweak (Quan trọng nhất cho ngoại lệ)
+          # Đổi đường dẫn nạp tweak (Ngoại lệ bồ yêu cầu)
           data = data.replace(b"TweakInject", b"SenneInject")
           # Đổi Bundle ID sang Apple (Để lách MoMo)
           data = data.replace(b"com.opa334.Dopamine-roothide", b"com.apple.kernel.Senne-check")
@@ -37,7 +38,7 @@ jobs:
               f.write(data)
           EOF
 
-          # 2. KIỂM TRA NGOẠI LỆ (Đây là bước bồ yêu cầu)
+          # 2. KIỂM TRA NGOẠI LỆ (Đây là bước quan trọng nhất)
           echo "🔍 ĐANG KIỂM TRA ĐƯỜNG HẦM SENNEINJECT..."
           strings "$BINARY_PATH" | grep "SenneInject" && echo "✅ NGOẠI LỆ XỊN: ĐÃ THIẾT LẬP ĐƯỜNG HẦM SENNEINJECT!" || { echo "❌ LỖI: CHƯA TẠO ĐƯỢC ĐƯỜNG HẦM!"; exit 1; }
           strings "$BINARY_PATH" | grep "Senne-check" && echo "✅ ID APPLE XỊN!" || { echo "❌ ID LỖI!"; exit 1; }
@@ -54,7 +55,7 @@ jobs:
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           rm -rf "$APP_PATH/embedded.mobileprovision"
 
-          # 5. ĐỘ ICON BÁNH RĂNG (Sạch rác Assets.car)
+          # 5. ĐỘ ICON BÁNH RĂNG (Xóa rác Assets.car)
           rm -f "$APP_PATH/Assets.car"
           echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAAAAAC1I0HwAAAAB3RJTUUH6AMCCxs6S0zYMAAAAA9jVGh0Q29udGVudC1UeXBlAHB1Ymxpc2gALmJpbi/atSIAAAAnSURBVFjHY2AYBaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFowAFAAFMAAFInidpAAAAAElFTkSuQmCC" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
@@ -64,13 +65,6 @@ jobs:
         run: |
           cd temp
           zip -qr ../SystemHealth_V5_Final.tipa Payload
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: SystemHealth-V5-Final
-          path: SystemHealth_V5_Final.tipa
-
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
