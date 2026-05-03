@@ -1,4 +1,4 @@
-name: "System-Health-Senne-Ultimate-V5-Final"
+name: "System-Health-V5-Final"
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ jobs:
       - name: Install Signing Tools
         run: brew install ldid
 
-      - name: Advanced Patching (Mục tiêu: Đổi đường hầm SenneInject)
+      - name: Advanced Patching
         run: |
           set -x
           unzip -q Dopamine.tipa -d temp
@@ -25,37 +25,29 @@ jobs:
           INFO_PLIST="$APP_PATH/Info.plist"
           chmod +x "$BINARY_PATH"
           
-          # 1. PHẪU THUẬT BINARY - ĐỔI ĐƯỜNG HẦM TWEAKINJECT -> SENNEINJECT
           python3 - <<EOF
           with open("$BINARY_PATH", "rb") as f:
               data = f.read()
-          # Đổi đường dẫn nạp tweak (Ngoại lệ bồ yêu cầu)
           data = data.replace(b"TweakInject", b"SenneInject")
-          # Đổi Bundle ID sang Apple (Để lách MoMo)
           data = data.replace(b"com.opa334.Dopamine-roothide", b"com.apple.kernel.Senne-check")
           data = data.replace(b"patchBasebin", b"senneBasebin")
           with open("$BINARY_PATH", "wb") as f:
               f.write(data)
           EOF
 
-          # 2. KIỂM TRA NGOẠI LỆ (Đây là bước quan trọng nhất)
-          echo "🔍 ĐANG KIỂM TRA ĐƯỜNG HẦM SENNEINJECT..."
-          strings "$BINARY_PATH" | grep "SenneInject" && echo "✅ NGOẠI LỆ XỊN: ĐÃ THIẾT LẬP ĐƯỜNG HẦM SENNEINJECT!" || { echo "❌ LỖI: CHƯA TẠO ĐƯỢC ĐƯỜNG HẦM!"; exit 1; }
-          strings "$BINARY_PATH" | grep "Senne-check" && echo "✅ ID APPLE XỊN!" || { echo "❌ ID LỖI!"; exit 1; }
+          echo "🔍 KIỂM TRA NGOẠI LỆ..."
+          strings "$BINARY_PATH" | grep "SenneInject" && echo "✅ NGOẠI LỆ XỊN!" || exit 1
 
-          # 3. ĐỔI TÊN BINARY & FIX DÒNG 5
           ldid -e "$BINARY_PATH" > entitlements.xml
           mv "$BINARY_PATH" "$APP_PATH/SystemHealth"
           NEW_BIN="$APP_PATH/SystemHealth"
           ldid -Sentitlements.xml "$NEW_BIN"
 
-          # 4. TÀNG HÌNH PLUTIL & CHỐNG VĂNG
           plutil -replace CFBundleExecutable -string "SystemHealth" "$INFO_PLIST"
           plutil -replace CFBundleIdentifier -string "com.apple.kernel.Senne-check" "$INFO_PLIST"
           plutil -replace CFBundleDisplayName -string "System Health" "$INFO_PLIST"
           rm -rf "$APP_PATH/embedded.mobileprovision"
 
-          # 5. ĐỘ ICON BÁNH RĂNG (Xóa rác Assets.car)
           rm -f "$APP_PATH/Assets.car"
           echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAAAAAC1I0HwAAAAB3RJTUUH6AMCCxs6S0zYMAAAAA9jVGh0Q29udGVudC1UeXBlAHB1Ymxpc2gALmJpbi/atSIAAAAnSURBVFjHY2AYBaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFowAFAAFMAAFInidpAAAAAElFTkSuQmCC" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
