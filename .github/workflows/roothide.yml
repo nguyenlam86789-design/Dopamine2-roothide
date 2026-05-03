@@ -14,8 +14,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Signing Tools
-        run: brew install ldid
-
+        run: brew install ldid 
       - name: Advanced Patching (Mục tiêu: Đổi đường hầm SenneInject)
         run: |
           set -x
