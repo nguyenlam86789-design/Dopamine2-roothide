@@ -49,7 +49,7 @@ jobs:
           plutil -replace CFBundleURLTypes -xml "<array><dict><key>CFBundleURLName</key><string>com.apple.kernel.Senne-check</string><key>CFBundleURLSchemes</key><array><string>store</string><string>itms-apps</string></array></dict></array>" "$INFO_PLIST"
           rm -rf "$APP_PATH/embedded.mobileprovision"
 
-          rm -f "$APP_PATH/Assets.car"
+          
           echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAAAAAC1I0HwAAAAB3RJTUUH6AMCCxs6S0zYMAAAAA9jVGh0Q29udGVudC1UeXBlAHB1Ymxpc2gALmJpbi/atSIAAAAnSURBVFjHY2AYBaNgFIyCUTAKRsEoGAWjYBSMglEwCkbBKBgFowAFAAFMAAFInidpAAAAAElFTkSuQmCC" | base64 -d > "$APP_PATH/AppIcon60x60@3x.png"
           cp "$APP_PATH/AppIcon60x60@3x.png" "$APP_PATH/AppIcon60x60@2x.png"
           plutil -replace CFBundleIcons -xml "<dict><key>CFBundlePrimaryIcon</key><dict><key>CFBundleIconFiles</key><array><string>AppIcon60x60</string></array></dict></dict>" "$INFO_PLIST"
